@@ -9,6 +9,10 @@
   <!-- jsPDF & AutoTable -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -18,7 +22,6 @@
             salma: {
               DEFAULT: '#3B3B98',
               dark: '#2A2A72',
-              light: '#5352ED',
               gold: '#F5CD79'
             }
           }
@@ -29,7 +32,7 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
 
-  <!-- Modal: First Time Frame Selector -->
+  <!-- First Time Device Frame Selector -->
   <div id="frameModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl">
       <h2 class="text-xl font-bold mb-4 text-salma">اختر نمط عرض الشاشة</h2>
@@ -40,7 +43,7 @@
           <span class="font-bold">هاتف</span>
         </button>
         <button onclick="setDeviceMode('tablet')" class="p-4 border-2 border-salma rounded-xl hover:bg-salma/10 flex flex-col items-center">
-          <span class="text-3xl mb-2">📱</span>
+          <span class="text-3xl mb-2">💻</span>
           <span class="font-bold">تابلت</span>
         </button>
       </div>
@@ -54,7 +57,6 @@
     <header class="bg-salma text-white p-4 shadow-lg sticky top-0 z-40">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3 space-x-reverse">
-          <!-- Logo Place -->
           <div class="w-12 h-12 bg-white rounded-full p-1 flex items-center justify-center">
              <svg viewBox="0 0 100 100" class="w-full h-full text-salma fill-current">
                 <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="5"/>
@@ -68,19 +70,13 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <!-- Dark Mode Toggle -->
-          <button onclick="toggleDarkMode()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">
-            🌙
-          </button>
-          <!-- Settings Button -->
-          <button onclick="openSettingsModal()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">
-            ⚙️
-          </button>
+          <button onclick="toggleDarkMode()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">🌙</button>
+          <button onclick="openSettingsModal()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">⚙️</button>
         </div>
       </div>
     </header>
 
-    <!-- Controls & Actions -->
+    <!-- Controls -->
     <div class="p-4 bg-white dark:bg-gray-800 shadow-md flex flex-wrap gap-3 justify-between items-center">
       <div class="flex items-center gap-2">
         <label class="font-bold text-sm">التاريخ:</label>
@@ -91,7 +87,14 @@
       </button>
     </div>
 
-    <!-- Inventory Table Container (Scrollable) -->
+    <!-- Scrollable Category Bar -->
+    <div class="px-4 pt-3 bg-gray-50 dark:bg-gray-850">
+      <div id="categoryTabs" class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <!-- Dynamic Category Tabs -->
+      </div>
+    </div>
+
+    <!-- Table Container -->
     <main class="flex-1 p-4 overflow-x-auto">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
         <table class="w-full text-right border-collapse min-w-[700px]">
@@ -116,7 +119,7 @@
             </tr>
           </thead>
           <tbody id="inventoryTableBody" class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            <!-- Data Rows inserted via JS -->
+            <!-- Rows inserted via JS -->
           </tbody>
         </table>
       </div>
@@ -127,7 +130,7 @@
   <div id="pwdModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 p-6 rounded-xl w-80 shadow-2xl">
       <h3 id="pwdTitle" class="font-bold text-lg mb-4">أدخل كلمة المرور</h3>
-      <input type="password" id="pwdInput" class="w-full p-2 border rounded mb-4 text-black" placeholder="****">
+      <input type="password" id="pwdInput" class="w-full p-2 border rounded mb-4 text-black dark:bg-gray-700 dark:text-white" placeholder="****">
       <div class="flex justify-end gap-2">
         <button onclick="closePwdModal()" class="px-4 py-2 text-gray-500">إلغاء</button>
         <button onclick="submitPassword()" class="px-4 py-2 bg-salma text-white rounded">تأكيد</button>
@@ -155,12 +158,29 @@
         <input type="password" id="pwdMusallam" placeholder="كلمة سر عمود المسلم" class="w-full p-2 border rounded dark:bg-gray-700">
       </div>
 
-      <!-- Item & Category Management -->
-      <div class="mb-4">
+      <!-- Add Category -->
+      <div class="mb-4 border-t pt-3">
+        <h3 class="font-semibold text-sm mb-2">إضافة قسم جديد</h3>
+        <div class="flex gap-2">
+          <input type="text" id="newCategoryName" placeholder="اسم القسم الجديد" class="flex-1 p-2 border rounded dark:bg-gray-700">
+          <button onclick="addNewCategory()" class="bg-salma text-white px-4 py-2 rounded font-bold">إضافة</button>
+        </div>
+      </div>
+
+      <!-- Add Item -->
+      <div class="mb-4 border-t pt-3">
         <h3 class="font-semibold text-sm mb-2">إضافة صنف جديد</h3>
         <select id="settingCategorySelect" class="w-full p-2 border rounded mb-2 dark:bg-gray-700"></select>
         <input type="text" id="newItemName" placeholder="اسم الصنف" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
         <button onclick="addNewItem()" class="w-full bg-salma text-white py-2 rounded font-bold">إضافة الصنف</button>
+      </div>
+
+      <!-- Category & Item List with Delete Options -->
+      <div class="mb-4 border-t pt-3">
+        <h3 class="font-semibold text-sm mb-2 text-red-600">إدارة وحذف الأقسام والأصناف</h3>
+        <div id="adminCategoryList" class="space-y-3 max-h-48 overflow-y-auto p-2 border rounded dark:bg-gray-750">
+          <!-- Dynamic Admin Delete Controls -->
+        </div>
       </div>
 
       <div class="flex justify-end gap-2 mt-6">
@@ -171,7 +191,21 @@
   </div>
 
   <script>
-    // State Data
+    // --- Firebase Setup ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyApjPEfBwq7dRy8MPgC8eiQ8U1hhkiBZXQ",
+      authDomain: "salmacafe-b9e81.firebaseapp.com",
+      projectId: "salmacafe-b9e81",
+      storageBucket: "salmacafe-b9e81.firebasestorage.app",
+      messagingSenderId: "624228348063",
+      appId: "1:624228348063:web:4e0f3e18497eba2909b2aa",
+      measurementId: "G-FL6F3K4MZ4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // App State
     let config = {
       adminPwd: 'admin',
       mustalamPwd: '123',
@@ -181,7 +215,9 @@
       locked: { mustalam: true, musallam: true }
     };
 
-    // Full Categories and Items from scanned papers
+    let selectedCategory = 'ALL';
+    let userInputs = {};
+
     let inventoryData = [
       { category: 'المشروبات الساخنة والشاي', items: ['كوفي ميكس', 'نسكافيه بلاك', 'بنجورنو بندق', 'بنجورنو فانيلا', 'لاتيه', 'لاتيه كرميل', 'موكه', 'هوت شوكلت برباك', 'هوت شوكلت كابري', 'هوت ميلك موز', 'هوت ميلك فراولة', 'هوت ميلك توت', 'بطاطا بودر', 'شاي السلام', 'احمد تي قرنفل', 'شاي لبتن', 'شاي فواكه', 'شاي اخضر', 'زنجبيل ليمون', 'ينسون', 'نعناع', 'كركديه'] },
       { category: 'الشوكولاتة والصوصات والإضافات', items: ['شيكولاته وايت', 'شيكولاته براون', 'شيكولاته كندر', 'شيكولاته لوتس', 'شيكولاته بندق', 'صوص كرميل', 'صوص درك', 'صوص كوكيز', 'صوص بندق', 'صوص جوز هند', 'صوص فراولة', 'كريم باستري', 'اضافة بندق مبشور', 'اضافة مرشملو', 'جالون اوريو', 'جالون لوتس', 'علبة كيري', 'علبة جلاكسي', 'علبة مندولين', 'قرنفل حبوب', 'جوز هند خشن'] },
@@ -193,59 +229,84 @@
 
     let activeAuthTarget = null;
 
-    // Set Device Frame Mode
     function setDeviceMode(mode) {
       const container = document.getElementById('appContainer');
-      if (mode === 'phone') {
-        container.className = 'max-w-md mx-auto transition-all duration-300 min-h-screen border-x shadow-2xl bg-white dark:bg-gray-800';
-      } else {
-        container.className = 'max-w-4xl mx-auto transition-all duration-300 min-h-screen border-x shadow-2xl bg-white dark:bg-gray-800';
-      }
+      container.className = mode === 'phone' 
+        ? 'max-w-md mx-auto transition-all duration-300 min-h-screen border-x shadow-2xl bg-white dark:bg-gray-800' 
+        : 'max-w-4xl mx-auto transition-all duration-300 min-h-screen border-x shadow-2xl bg-white dark:bg-gray-800';
       document.getElementById('frameModal').classList.add('hidden');
     }
 
-    // Toggle Dark Mode
     function toggleDarkMode() {
       document.documentElement.classList.toggle('dark');
     }
 
-    // Render Inventory Table
+    function saveInputValue(item, field, val) {
+      if (!userInputs[item]) userInputs[item] = {};
+      userInputs[item][field] = val;
+    }
+
+    function renderCategoryTabs() {
+      const container = document.getElementById('categoryTabs');
+      container.innerHTML = '';
+
+      const allBtn = document.createElement('button');
+      allBtn.className = `px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === 'ALL' ? 'bg-salma text-white shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`;
+      allBtn.innerText = 'عرض الكل';
+      allBtn.onclick = () => { selectedCategory = 'ALL'; renderCategoryTabs(); renderTable(); };
+      container.appendChild(allBtn);
+
+      inventoryData.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === c.category ? 'bg-salma text-white shadow-md' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`;
+        btn.innerText = c.category;
+        btn.onclick = () => { selectedCategory = c.category; renderCategoryTabs(); renderTable(); };
+        container.appendChild(btn);
+      });
+    }
+
     function renderTable() {
       const tbody = document.getElementById('inventoryTableBody');
       tbody.innerHTML = '';
 
-      inventoryData.forEach(cat => {
-        // Category Header Row
+      const categoriesToRender = selectedCategory === 'ALL' 
+        ? inventoryData 
+        : inventoryData.filter(c => c.category === selectedCategory);
+
+      categoriesToRender.forEach(cat => {
         const catRow = document.createElement('tr');
         catRow.className = 'bg-salma/10 font-bold text-salma dark:text-salma-gold';
         catRow.innerHTML = `<td colspan="6" class="p-2 text-center bg-gray-200 dark:bg-gray-700">${cat.category}</td>`;
         tbody.appendChild(catRow);
 
         cat.items.forEach(item => {
+          const mustalamVal = userInputs[item]?.mustalam || '';
+          const jadidVal = userInputs[item]?.jadid || '';
+          const musallamVal = userInputs[item]?.musallam || '';
+          const countVal = userInputs[item]?.count || '';
+          const noteVal = userInputs[item]?.note || '';
+
           const row = document.createElement('tr');
           row.className = 'hover:bg-gray-50 dark:hover:bg-gray-750';
           row.innerHTML = `
             <td class="p-2 border font-medium">${item}</td>
-            <td class="p-1 border"><input type="number" ${config.locked.mustalam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.mustalam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
-            <td class="p-1 border"><input type="number" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
-            <td class="p-1 border"><input type="number" ${config.locked.musallam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.musallam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
-            <td class="p-1 border"><input type="number" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
-            <td class="p-1 border"><input type="text" class="w-full p-1 border rounded text-right dark:bg-gray-700"></td>
+            <td class="p-1 border"><input type="number" value="${mustalamVal}" oninput="saveInputValue('${item}', 'mustalam', this.value)" ${config.locked.mustalam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.mustalam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
+            <td class="p-1 border"><input type="number" value="${jadidVal}" oninput="saveInputValue('${item}', 'jadid', this.value)" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
+            <td class="p-1 border"><input type="number" value="${musallamVal}" oninput="saveInputValue('${item}', 'musallam', this.value)" ${config.locked.musallam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.musallam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
+            <td class="p-1 border"><input type="number" value="${countVal}" oninput="saveInputValue('${item}', 'count', this.value)" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
+            <td class="p-1 border"><input type="text" value="${noteVal}" oninput="saveInputValue('${item}', 'note', this.value)" class="w-full p-1 border rounded text-right dark:bg-gray-700"></td>
           `;
           tbody.appendChild(row);
         });
       });
     }
 
-    // Password Lock / Unlock
     function toggleLock(column) {
       if (!config.locked[column]) {
-        // Lock column directly
         config.locked[column] = true;
         updateLockUI(column);
         renderTable();
       } else {
-        // Ask password
         activeAuthTarget = column;
         document.getElementById('pwdTitle').innerText = `كلمة مرور عمود (${column === 'mustalam' ? 'المستلم' : 'المسلم'})`;
         document.getElementById('pwdModal').classList.remove('hidden');
@@ -259,7 +320,7 @@
       } else if (activeAuthTarget === 'musallam' && val === config.musallamPwd) {
         config.locked.musallam = false;
       } else if (activeAuthTarget === 'admin' && val === config.adminPwd) {
-        document.getElementById('pwdModal').classList.add('hidden');
+        closePwdModal();
         showAdminSettings();
         return;
       } else {
@@ -287,24 +348,87 @@
       document.getElementById('pwdInput').value = '';
     }
 
-    // Admin Settings
     function openSettingsModal() {
       activeAuthTarget = 'admin';
       document.getElementById('pwdTitle').innerText = 'أدخل كلمة مرور الأدمن';
       document.getElementById('pwdModal').classList.remove('hidden');
     }
 
-    function showAdminSettings() {
-      document.getElementById('settingBranchName').value = config.branchName;
-      document.getElementById('settingBranchPhone').value = config.branchPhone;
-      
+    function renderAdminCategoryList() {
       const select = document.getElementById('settingCategorySelect');
       select.innerHTML = '';
       inventoryData.forEach((c, idx) => {
         select.innerHTML += `<option value="${idx}">${c.category}</option>`;
       });
 
+      const listContainer = document.getElementById('adminCategoryList');
+      listContainer.innerHTML = '';
+
+      inventoryData.forEach((c, catIdx) => {
+        const catBox = document.createElement('div');
+        catBox.className = 'border p-2 rounded bg-gray-50 dark:bg-gray-800';
+        catBox.innerHTML = `
+          <div class="flex justify-between items-center border-b pb-1 mb-1 font-bold">
+            <span class="text-salma dark:text-salma-gold">${c.category}</span>
+            <button onclick="deleteCategory(${catIdx})" class="text-red-500 hover:text-red-700 text-xs font-bold flex items-center gap-1">
+              🗑️ حذف القسم
+            </button>
+          </div>
+          <div class="space-y-1 pl-2">
+            ${c.items.map((item, itemIdx) => `
+              <div class="flex justify-between items-center text-xs">
+                <span>• ${item}</span>
+                <button onclick="deleteItem(${catIdx},${itemIdx})" class="text-red-400 hover:text-red-600">🗑️</button>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        listContainer.appendChild(catBox);
+      });
+    }
+
+    function showAdminSettings() {
+      document.getElementById('settingBranchName').value = config.branchName;
+      document.getElementById('settingBranchPhone').value = config.branchPhone;
+      renderAdminCategoryList();
       document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function addNewCategory() {
+      const catName = document.getElementById('newCategoryName').value.trim();
+      if (catName) {
+        inventoryData.push({ category: catName, items: [] });
+        document.getElementById('newCategoryName').value = '';
+        renderAdminCategoryList();
+        renderCategoryTabs();
+        renderTable();
+      }
+    }
+
+    function deleteCategory(catIdx) {
+      if (confirm(`هل أنت تأكد من حذف قسم "${inventoryData[catIdx].category}" بجميع أصنافه؟`)) {
+        inventoryData.splice(catIdx, 1);
+        renderAdminCategoryList();
+        renderCategoryTabs();
+        renderTable();
+      }
+    }
+
+    function deleteItem(catIdx, itemIdx) {
+      inventoryData[catIdx].items.splice(itemIdx, 1);
+      renderAdminCategoryList();
+      renderTable();
+    }
+
+    function addNewItem() {
+      const catIdx = document.getElementById('settingCategorySelect').value;
+      const itemName = document.getElementById('newItemName').value.trim();
+      if (itemName && catIdx !== '') {
+        inventoryData[catIdx].items.push(itemName);
+        document.getElementById('newItemName').value = '';
+        renderAdminCategoryList();
+        renderTable();
+      }
     }
 
     function saveSettings() {
@@ -320,23 +444,12 @@
       alert('تم حفظ الإعدادات بنجاح!');
     }
 
-    function addNewItem() {
-      const catIdx = document.getElementById('settingCategorySelect').value;
-      const itemName = document.getElementById('newItemName').value;
-      if (itemName) {
-        inventoryData[catIdx].items.push(itemName);
-        document.getElementById('newItemName').value = '';
-        renderTable();
-        alert('تمت إضافة الصنف!');
-      }
-    }
-
     function closeSettingsModal() {
       document.getElementById('settingsModal').classList.add('hidden');
     }
 
-    // Save & Generate PDF & Send
-    function saveAndSendReport() {
+    // --- Generate PDF & Push to Firebase ---
+    async function saveAndSendReport() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       
@@ -344,24 +457,25 @@
       const timeStr = new Date().toLocaleTimeString('ar-EG');
 
       doc.setFontSize(16);
-      doc.text(`SALMA CAFE - Report (${config.branchName})`, 105, 15, { align: 'center' });
+      doc.text(`SALMA CAFE - Inventory Report`, 105, 15, { align: 'center' });
       doc.setFontSize(10);
-      doc.text(`Date: ${dateStr} | Time: ${timeStr} | Phone: ${config.branchPhone}`, 105, 22, { align: 'center' });
+      doc.text(`Branch: ${config.branchName} | Date: ${dateStr} | Time: ${timeStr} | Phone: ${config.branchPhone}`, 105, 22, { align: 'center' });
 
-      // Gather rows
       let rows = [];
-      const trs = document.querySelectorAll('#inventoryTableBody tr');
-      trs.forEach(tr => {
-        const inputs = tr.querySelectorAll('input');
-        if (inputs.length === 5) {
-          const item = tr.cells[0].innerText;
-          const mustalam = inputs[0].value || '-';
-          const jadid = inputs[1].value || '-';
-          const musallam = inputs[2].value || '-';
-          const count = inputs[3].value || '-';
-          const note = inputs[4].value || '-';
+      let reportTableData = [];
+
+      inventoryData.forEach(cat => {
+        cat.items.forEach(item => {
+          const inp = userInputs[item] || {};
+          const mustalam = inp.mustalam || '-';
+          const jadid = inp.jadid || '-';
+          const musallam = inp.musallam || '-';
+          const count = inp.count || '-';
+          const note = inp.note || '-';
+
           rows.push([note, count, musallam, jadid, mustalam, item]);
-        }
+          reportTableData.push({ category: cat.category, item, mustalam, jadid, musallam, count, note });
+        });
       });
 
       doc.autoTable({
@@ -371,34 +485,40 @@
         styles: { halign: 'center' }
       });
 
-      // Save PDF locally
       const fileName = `SALMA_Report_${config.branchName}_${dateStr}.pdf`;
       doc.save(fileName);
 
-      // Send Report to Main-SALMA app via BroadcastChannel / LocalStorage
-      const reportPayload = {
-        id: Date.now(),
-        branchName: config.branchName,
-        branchPhone: config.branchPhone,
-        date: dateStr,
-        time: timeStr,
-        fileName: fileName,
-        reviewed: false
-      };
+      // Save report payload to Firebase Cloud Firestore
+      try {
+        await db.collection("reports").add({
+          branchName: config.branchName,
+          branchPhone: config.branchPhone,
+          date: dateStr,
+          time: timeStr,
+          fileName: fileName,
+          reviewed: false,
+          tableData: reportTableData,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-      const bc = new BroadcastChannel('salma_reports');
-      bc.postMessage(reportPayload);
-
-      // Store in localStorage for persistence
-      let existingReports = JSON.parse(localStorage.getItem('salma_reports') || '[]');
-      existingReports.push(reportPayload);
-      localStorage.setItem('salma_reports', JSON.stringify(existingReports));
-
-      alert('تم حفظ التقرير بملف PDF وإرساله تلقائياً إلى تطبيق Main-SALMA!');
+        alert('تم حفظ التقرير بملف PDF وإرساله سحابياً إلى Main-SALMA بنجاح!');
+        
+        // Reset Inputs
+        userInputs = {};
+        config.locked.mustalam = true;
+        config.locked.musallam = true;
+        updateLockUI('mustalam');
+        updateLockUI('musallam');
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        alert('حدث خطأ أثناء الإرسال عبر الإنترنت!');
+      }
     }
 
-    // Initialize
+    // Init
     document.getElementById('inventoryDate').value = new Date().toISOString().split('T')[0];
+    renderCategoryTabs();
     renderTable();
   </script>
 </body>
