@@ -58,8 +58,8 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3 space-x-reverse">
           <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-inner overflow-hidden p-0.5">
-  <img src="salma logo.png" alt="SALMA Logo" class="w-full h-full object-cover rounded-lg">
-</div>
+            <img src="Salma-logo.png" alt="SALMA Logo" class="w-full h-full object-cover rounded-lg">
+          </div>
           <div>
             <h1 class="text-xl font-bold tracking-wide">SALMA CAFE</h1>
             <p id="headerBranchInfo" class="text-xs text-salma-gold">فرع: الرئيسي | هاتف: 01000000000</p>
@@ -91,34 +91,36 @@
       </div>
     </div>
 
-    <!-- Table Container -->
+    <!-- Table Container with Horizontal Touch Scrolling Fix -->
     <main class="flex-1 p-4 overflow-x-auto">
       <div id="pdfExportTarget" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden p-2">
-        <table class="w-full text-right border-collapse min-w-[700px]">
-          <thead>
-            <tr class="bg-salma text-white text-sm">
-              <th class="p-3 border-b border-salma-dark">الأصناف</th>
-              <th class="p-3 border-b border-salma-dark">
-                <div class="flex items-center justify-between">
-                  <span>المستلم</span>
-                  <button onclick="toggleLock('mustalam')" id="btnLockMustalam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
-                </div>
-              </th>
-              <th class="p-3 border-b border-salma-dark">الجديد</th>
-              <th class="p-3 border-b border-salma-dark">
-                <div class="flex items-center justify-between">
-                  <span>المسلم</span>
-                  <button onclick="toggleLock('musallam')" id="btnLockMusallam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
-                </div>
-              </th>
-              <th class="p-3 border-b border-salma-dark">العدد (تلقائي)</th>
-              <th class="p-3 border-b border-salma-dark">الملاحظات</th>
-            </tr>
-          </thead>
-          <tbody id="inventoryTableBody" class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-            <!-- Rows inserted via JS -->
-          </tbody>
-        </table>
+        <div class="w-full overflow-x-auto touch-pan-x">
+          <table class="w-full text-right border-collapse min-w-[750px]">
+            <thead>
+              <tr class="bg-salma text-white text-sm">
+                <th class="p-3 border-b border-salma-dark w-1/3">الأصناف</th>
+                <th class="p-3 border-b border-salma-dark text-center">
+                  <div class="flex items-center justify-between">
+                    <span>المستلم</span>
+                    <button onclick="toggleLock('mustalam')" id="btnLockMustalam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
+                  </div>
+                </th>
+                <th class="p-3 border-b border-salma-dark text-center">الجديد</th>
+                <th class="p-3 border-b border-salma-dark text-center">
+                  <div class="flex items-center justify-between">
+                    <span>المسلم</span>
+                    <button onclick="toggleLock('musallam')" id="btnLockMusallam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
+                  </div>
+                </th>
+                <th class="p-3 border-b border-salma-dark text-center">العدد (تلقائي)</th>
+                <th class="p-3 border-b border-salma-dark text-center">الملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody" class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+              <!-- Rows inserted via JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   </div>
@@ -152,7 +154,7 @@
         <h3 class="font-semibold text-sm mb-2">تغيير كلمات المرور</h3>
         <input type="password" id="pwdAdmin" placeholder="كلمة سر الأدمن الجديدة" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
         <input type="password" id="pwdMustalam" placeholder="كلمة سر عمود المستلم" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
-        <input type="password" id="pwdMusallam" placeholder="كلمة سر عمود المسلم" class="w-full p-2 border rounded dark:bg-gray-700">
+        <input type="password" id="pwdMusallam" placeholder="كلمة سر عمود المسلم" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
       </div>
 
       <!-- Add Category -->
@@ -302,10 +304,10 @@
           row.className = 'hover:bg-gray-50 dark:hover:bg-gray-750';
           row.innerHTML = `
             <td class="p-2 border font-medium">${item}</td>
-            <td class="p-1 border"><input type="number" value="${mustalamVal}" oninput="saveInputValue('${item}', 'mustalam', this.value)" ${config.locked.mustalam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.mustalam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
-            <td class="p-1 border"><input type="number" value="${jadidVal}" oninput="saveInputValue('${item}', 'jadid', this.value)" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
-            <td class="p-1 border"><input type="number" value="${musallamVal}" oninput="saveInputValue('${item}', 'musallam', this.value)" ${config.locked.musallam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.musallam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
-            <td class="p-1 border"><input type="number" id="count-${item}" value="${countVal}" disabled class="w-full p-1 border rounded text-center font-bold bg-gray-100 dark:bg-gray-800 text-salma dark:text-salma-gold"></td>
+            <td class="p-1 border text-center"><input type="number" value="${mustalamVal}" oninput="saveInputValue('${item}', 'mustalam', this.value)" ${config.locked.mustalam ? 'disabled' : ''} class="w-20 p-1 border rounded text-center dark:bg-gray-700 ${config.locked.mustalam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
+            <td class="p-1 border text-center"><input type="number" value="${jadidVal}" oninput="saveInputValue('${item}', 'jadid', this.value)" class="w-20 p-1 border rounded text-center dark:bg-gray-700"></td>
+            <td class="p-1 border text-center"><input type="number" value="${musallamVal}" oninput="saveInputValue('${item}', 'musallam', this.value)" ${config.locked.musallam ? 'disabled' : ''} class="w-20 p-1 border rounded text-center dark:bg-gray-700 ${config.locked.musallam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
+            <td class="p-1 border text-center"><input type="number" id="count-${item}" value="${countVal}" disabled class="w-20 p-1 border rounded text-center font-bold bg-gray-100 dark:bg-gray-800 text-salma dark:text-salma-gold"></td>
             <td class="p-1 border"><input type="text" value="${noteVal}" oninput="saveInputValue('${item}', 'note', this.value)" class="w-full p-1 border rounded text-right dark:bg-gray-700"></td>
           `;
           tbody.appendChild(row);
