@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SALMA Cafe - نظام الجرد</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- jsPDF & AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            salma: {
+              DEFAULT: '#3B3B98',
+              dark: '#2A2A72',
+              light: '#5352ED',
+              gold: '#F5CD79'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
+
+  <!-- Modal: First Time Frame Selector -->
+  <div id="frameModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl">
+      <h2 class="text-xl font-bold mb-4 text-salma">اختر نمط عرض الشاشة</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">يمكنك ضبط واجهة التطبيق لتناسب جهازك</p>
+      <div class="grid grid-cols-2 gap-4">
+        <button onclick="setDeviceMode('phone')" class="p-4 border-2 border-salma rounded-xl hover:bg-salma/10 flex flex-col items-center">
+          <span class="text-3xl mb-2">📱</span>
+          <span class="font-bold">هاتف</span>
+        </button>
+        <button onclick="setDeviceMode('tablet')" class="p-4 border-2 border-salma rounded-xl hover:bg-salma/10 flex flex-col items-center">
+          <span class="text-3xl mb-2">📱</span>
+          <span class="font-bold">تابلت</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Main Container -->
+  <div id="appContainer" class="mx-auto transition-all duration-300 min-h-screen flex flex-col">
+    
+    <!-- Header -->
+    <header class="bg-salma text-white p-4 shadow-lg sticky top-0 z-40">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3 space-x-reverse">
+          <!-- Logo Place -->
+          <div class="w-12 h-12 bg-white rounded-full p-1 flex items-center justify-center">
+             <svg viewBox="0 0 100 100" class="w-full h-full text-salma fill-current">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="5"/>
+                <path d="M50 15 L60 35 L80 35 L65 50 L70 70 L50 58 L30 70 L35 50 L20 35 L40 35 Z"/>
+             </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-wide">SALMA CAFE</h1>
+            <p id="headerBranchInfo" class="text-xs text-salma-gold">فرع: الرئيسي | هاتف: 01000000000</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Dark Mode Toggle -->
+          <button onclick="toggleDarkMode()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">
+            🌙
+          </button>
+          <!-- Settings Button -->
+          <button onclick="openSettingsModal()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">
+            ⚙️
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Controls & Actions -->
+    <div class="p-4 bg-white dark:bg-gray-800 shadow-md flex flex-wrap gap-3 justify-between items-center">
+      <div class="flex items-center gap-2">
+        <label class="font-bold text-sm">التاريخ:</label>
+        <input type="date" id="inventoryDate" class="p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+      </div>
+      <button onclick="saveAndSendReport()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl shadow transition-colors flex items-center gap-2">
+        <span>💾</span> حفظ ورفع الملف (PDF)
+      </button>
+    </div>
+
+    <!-- Inventory Table Container (Scrollable) -->
+    <main class="flex-1 p-4 overflow-x-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <table class="w-full text-right border-collapse min-w-[700px]">
+          <thead>
+            <tr class="bg-salma text-white text-sm">
+              <th class="p-3 border-b border-salma-dark">الأصناف</th>
+              <th class="p-3 border-b border-salma-dark">
+                <div class="flex items-center justify-between">
+                  <span>المستلم</span>
+                  <button onclick="toggleLock('mustalam')" id="btnLockMustalam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
+                </div>
+              </th>
+              <th class="p-3 border-b border-salma-dark">الجديد</th>
+              <th class="p-3 border-b border-salma-dark">
+                <div class="flex items-center justify-between">
+                  <span>المسلم</span>
+                  <button onclick="toggleLock('musallam')" id="btnLockMusallam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
+                </div>
+              </th>
+              <th class="p-3 border-b border-salma-dark">العدد</th>
+              <th class="p-3 border-b border-salma-dark">الملاحظات</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryTableBody" class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <!-- Data Rows inserted via JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Password Prompt Modal -->
+  <div id="pwdModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl w-80 shadow-2xl">
+      <h3 id="pwdTitle" class="font-bold text-lg mb-4">أدخل كلمة المرور</h3>
+      <input type="password" id="pwdInput" class="w-full p-2 border rounded mb-4 text-black" placeholder="****">
+      <div class="flex justify-end gap-2">
+        <button onclick="closePwdModal()" class="px-4 py-2 text-gray-500">إلغاء</button>
+        <button onclick="submitPassword()" class="px-4 py-2 bg-salma text-white rounded">تأكيد</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Settings Modal -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+      <h2 class="text-xl font-bold mb-4 border-b pb-2 text-salma">إعدادات النظام (Admin)</h2>
+      
+      <!-- Branch Info -->
+      <div class="mb-4">
+        <h3 class="font-semibold text-sm mb-2">بيانات الفرع</h3>
+        <input type="text" id="settingBranchName" placeholder="اسم الفرع" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
+        <input type="text" id="settingBranchPhone" placeholder="رقم الهاتف" class="w-full p-2 border rounded dark:bg-gray-700">
+      </div>
+
+      <!-- Password Change -->
+      <div class="mb-4">
+        <h3 class="font-semibold text-sm mb-2">تغيير كلمات المرور</h3>
+        <input type="password" id="pwdAdmin" placeholder="كلمة سر الأدمن الجديدة" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
+        <input type="password" id="pwdMustalam" placeholder="كلمة سر عمود المستلم" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
+        <input type="password" id="pwdMusallam" placeholder="كلمة سر عمود المسلم" class="w-full p-2 border rounded dark:bg-gray-700">
+      </div>
+
+      <!-- Item & Category Management -->
+      <div class="mb-4">
+        <h3 class="font-semibold text-sm mb-2">إضافة صنف جديد</h3>
+        <select id="settingCategorySelect" class="w-full p-2 border rounded mb-2 dark:bg-gray-700"></select>
+        <input type="text" id="newItemName" placeholder="اسم الصنف" class="w-full p-2 border rounded mb-2 dark:bg-gray-700">
+        <button onclick="addNewItem()" class="w-full bg-salma text-white py-2 rounded font-bold">إضافة الصنف</button>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6">
+        <button onclick="closeSettingsModal()" class="px-4 py-2 border rounded">إغلاق</button>
+        <button onclick="saveSettings()" class="px-4 py-2 bg-green-600 text-white rounded font-bold">حفظ التغييرات</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State Data
+    let config = {
+      adminPwd: 'admin',
+      mustalamPwd: '123',
+      musallamPwd: '456',
+      branchName: 'الرئيسي',
+      branchPhone: '01000000000',
+      locked: { mustalam: true, musallam: true }
+    };
+
+    // Full Categories and Items from scanned papers
+    let inventoryData = [
+      { category: 'المشروبات الساخنة والشاي', items: ['كوفي ميكس', 'نسكافيه بلاك', 'بنجورنو بندق', 'بنجورنو فانيلا', 'لاتيه', 'لاتيه كرميل', 'موكه', 'هوت شوكلت برباك', 'هوت شوكلت كابري', 'هوت ميلك موز', 'هوت ميلك فراولة', 'هوت ميلك توت', 'بطاطا بودر', 'شاي السلام', 'احمد تي قرنفل', 'شاي لبتن', 'شاي فواكه', 'شاي اخضر', 'زنجبيل ليمون', 'ينسون', 'نعناع', 'كركديه'] },
+      { category: 'الشوكولاتة والصوصات والإضافات', items: ['شيكولاته وايت', 'شيكولاته براون', 'شيكولاته كندر', 'شيكولاته لوتس', 'شيكولاته بندق', 'صوص كرميل', 'صوص درك', 'صوص كوكيز', 'صوص بندق', 'صوص جوز هند', 'صوص فراولة', 'كريم باستري', 'اضافة بندق مبشور', 'اضافة مرشملو', 'جالون اوريو', 'جالون لوتس', 'علبة كيري', 'علبة جلاكسي', 'علبة مندولين', 'قرنفل حبوب', 'جوز هند خشن'] },
+      { category: 'بن، مخبوزات وحشوات', items: ['سكر', 'بن فاتح سادة', 'بن فاتح محوج', 'بن غامق محوج', 'بن بندق', 'اسبرسو', 'توست', 'كرواسون', 'تشيز كيك', 'اكلير', 'ملفاي', 'براونز', 'دوناتس', 'عجينة وافل', 'عجينة كباكي', 'ساندوتش ميكس جبن تركي', 'كوب دوناتس', 'غطاء دوناتس', 'فاكهة حشو فراولة', 'فاكهة حشو عنب بري'] },
+      { category: 'الأكواب والأدوات الاستهلاكية', items: ['كوب سخن 4', 'كوب سخن 7', 'كوب سخن 8', 'كوب سخن 12', 'غطاء سخن', 'كوب سقعان 10', 'كوب سقعان 12', 'كوب سقعان 16', 'كوب صن داي', 'غطاء سقعان', 'علب وافل M', 'علب وافل L', 'علب وافل XL', 'جراب بوست', 'جراب أيس كريم', 'ورق زيدة', 'سندضة بلاستيك', 'شاليموه', 'معالق', 'شوكة', 'سكينة', 'أكياس كراش', 'أطباق فوم'] },
+      { category: 'النكهات والأيس كريم', items: ['جلي كولا', 'كريز', 'مانجه', 'أناناس', 'خوخ', 'باشون فروت', 'تفاح أخضر', 'ليمون', 'جوز هند', 'بلو بيري', 'بلو راس بيري', 'راس بيري', 'ميكس بيري', 'بطيخ', 'فراولة', 'نعناع', 'ايس كريم 10 ك', 'دفاربي بودر', 'بالتة صودا', 'كيوي', 'حامل أطباق كوبايات'] },
+      { category: 'مستلزمات التشغيل والمواد الخام', items: ['مكسرات سحلب', 'عصير تفاح', 'زبيب', 'قرفة عيدان', 'سحلب', 'فانيليا', 'بيكينج بودر', 'زبده', 'كرتونة مياه', 'بالتة ردبل', 'مناديل', 'بكر استريتش', 'باليته تشيز كيك', 'علبة كرواسون', 'دقيق', 'زيت', 'مفرش سفرة', 'بكر كاشير', 'لبن'] }
+    ];
+
+    let activeAuthTarget = null;
+
+    // Set Device Frame Mode
+    function setDeviceMode(mode) {
+      const container = document.getElementById('appContainer');
+      if (mode === 'phone') {
+        container.className = 'max-w-md mx-auto transition-all duration-300 min-h-screen border-x shadow-2xl bg-white dark:bg-gray-800';
+      } else {
+        container.className = 'max-w-4xl mx-auto transition-all duration-300 min-h-screen border-x shadow-2xl bg-white dark:bg-gray-800';
+      }
+      document.getElementById('frameModal').classList.add('hidden');
+    }
+
+    // Toggle Dark Mode
+    function toggleDarkMode() {
+      document.documentElement.classList.toggle('dark');
+    }
+
+    // Render Inventory Table
+    function renderTable() {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+
+      inventoryData.forEach(cat => {
+        // Category Header Row
+        const catRow = document.createElement('tr');
+        catRow.className = 'bg-salma/10 font-bold text-salma dark:text-salma-gold';
+        catRow.innerHTML = `<td colspan="6" class="p-2 text-center bg-gray-200 dark:bg-gray-700">${cat.category}</td>`;
+        tbody.appendChild(catRow);
+
+        cat.items.forEach(item => {
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-gray-50 dark:hover:bg-gray-750';
+          row.innerHTML = `
+            <td class="p-2 border font-medium">${item}</td>
+            <td class="p-1 border"><input type="number" ${config.locked.mustalam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.mustalam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
+            <td class="p-1 border"><input type="number" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
+            <td class="p-1 border"><input type="number" ${config.locked.musallam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.musallam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
+            <td class="p-1 border"><input type="number" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
+            <td class="p-1 border"><input type="text" class="w-full p-1 border rounded text-right dark:bg-gray-700"></td>
+          `;
+          tbody.appendChild(row);
+        });
+      });
+    }
+
+    // Password Lock / Unlock
+    function toggleLock(column) {
+      if (!config.locked[column]) {
+        // Lock column directly
+        config.locked[column] = true;
+        updateLockUI(column);
+        renderTable();
+      } else {
+        // Ask password
+        activeAuthTarget = column;
+        document.getElementById('pwdTitle').innerText = `كلمة مرور عمود (${column === 'mustalam' ? 'المستلم' : 'المسلم'})`;
+        document.getElementById('pwdModal').classList.remove('hidden');
+      }
+    }
+
+    function submitPassword() {
+      const val = document.getElementById('pwdInput').value;
+      if (activeAuthTarget === 'mustalam' && val === config.mustalamPwd) {
+        config.locked.mustalam = false;
+      } else if (activeAuthTarget === 'musallam' && val === config.musallamPwd) {
+        config.locked.musallam = false;
+      } else if (activeAuthTarget === 'admin' && val === config.adminPwd) {
+        document.getElementById('pwdModal').classList.add('hidden');
+        showAdminSettings();
+        return;
+      } else {
+        alert('كلمة المرور غير صحيحة!');
+        return;
+      }
+      updateLockUI(activeAuthTarget);
+      closePwdModal();
+      renderTable();
+    }
+
+    function updateLockUI(column) {
+      const btn = document.getElementById(column === 'mustalam' ? 'btnLockMustalam' : 'btnLockMusallam');
+      if (config.locked[column]) {
+        btn.innerText = '🔒 مغلق';
+        btn.className = 'text-xs bg-salma-dark px-2 py-1 rounded text-white';
+      } else {
+        btn.innerText = '🔓 مفتوح';
+        btn.className = 'text-xs bg-green-600 px-2 py-1 rounded text-white';
+      }
+    }
+
+    function closePwdModal() {
+      document.getElementById('pwdModal').classList.add('hidden');
+      document.getElementById('pwdInput').value = '';
+    }
+
+    // Admin Settings
+    function openSettingsModal() {
+      activeAuthTarget = 'admin';
+      document.getElementById('pwdTitle').innerText = 'أدخل كلمة مرور الأدمن';
+      document.getElementById('pwdModal').classList.remove('hidden');
+    }
+
+    function showAdminSettings() {
+      document.getElementById('settingBranchName').value = config.branchName;
+      document.getElementById('settingBranchPhone').value = config.branchPhone;
+      
+      const select = document.getElementById('settingCategorySelect');
+      select.innerHTML = '';
+      inventoryData.forEach((c, idx) => {
+        select.innerHTML += `<option value="${idx}">${c.category}</option>`;
+      });
+
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function saveSettings() {
+      config.branchName = document.getElementById('settingBranchName').value || config.branchName;
+      config.branchPhone = document.getElementById('settingBranchPhone').value || config.branchPhone;
+      
+      if (document.getElementById('pwdAdmin').value) config.adminPwd = document.getElementById('pwdAdmin').value;
+      if (document.getElementById('pwdMustalam').value) config.mustalamPwd = document.getElementById('pwdMustalam').value;
+      if (document.getElementById('pwdMusallam').value) config.musallamPwd = document.getElementById('pwdMusallam').value;
+
+      document.getElementById('headerBranchInfo').innerText = `فرع: ${config.branchName} | هاتف: ${config.branchPhone}`;
+      closeSettingsModal();
+      alert('تم حفظ الإعدادات بنجاح!');
+    }
+
+    function addNewItem() {
+      const catIdx = document.getElementById('settingCategorySelect').value;
+      const itemName = document.getElementById('newItemName').value;
+      if (itemName) {
+        inventoryData[catIdx].items.push(itemName);
+        document.getElementById('newItemName').value = '';
+        renderTable();
+        alert('تمت إضافة الصنف!');
+      }
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    // Save & Generate PDF & Send
+    function saveAndSendReport() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      const dateStr = document.getElementById('inventoryDate').value || new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toLocaleTimeString('ar-EG');
+
+      doc.setFontSize(16);
+      doc.text(`SALMA CAFE - Report (${config.branchName})`, 105, 15, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(`Date: ${dateStr} | Time: ${timeStr} | Phone: ${config.branchPhone}`, 105, 22, { align: 'center' });
+
+      // Gather rows
+      let rows = [];
+      const trs = document.querySelectorAll('#inventoryTableBody tr');
+      trs.forEach(tr => {
+        const inputs = tr.querySelectorAll('input');
+        if (inputs.length === 5) {
+          const item = tr.cells[0].innerText;
+          const mustalam = inputs[0].value || '-';
+          const jadid = inputs[1].value || '-';
+          const musallam = inputs[2].value || '-';
+          const count = inputs[3].value || '-';
+          const note = inputs[4].value || '-';
+          rows.push([note, count, musallam, jadid, mustalam, item]);
+        }
+      });
+
+      doc.autoTable({
+        head: [['ملاحظات', 'العدد', 'المسلم', 'جديد', 'المستلم', 'الصنف']],
+        body: rows,
+        startY: 30,
+        styles: { halign: 'center' }
+      });
+
+      // Save PDF locally
+      const fileName = `SALMA_Report_${config.branchName}_${dateStr}.pdf`;
+      doc.save(fileName);
+
+      // Send Report to Main-SALMA app via BroadcastChannel / LocalStorage
+      const reportPayload = {
+        id: Date.now(),
+        branchName: config.branchName,
+        branchPhone: config.branchPhone,
+        date: dateStr,
+        time: timeStr,
+        fileName: fileName,
+        reviewed: false
+      };
+
+      const bc = new BroadcastChannel('salma_reports');
+      bc.postMessage(reportPayload);
+
+      // Store in localStorage for persistence
+      let existingReports = JSON.parse(localStorage.getItem('salma_reports') || '[]');
+      existingReports.push(reportPayload);
+      localStorage.setItem('salma_reports', JSON.stringify(existingReports));
+
+      alert('تم حفظ التقرير بملف PDF وإرساله تلقائياً إلى تطبيق Main-SALMA!');
+    }
+
+    // Initialize
+    document.getElementById('inventoryDate').value = new Date().toISOString().split('T')[0];
+    renderTable();
+  </script>
+</body>
+</html>
