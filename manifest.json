@@ -1,0 +1,15 @@
+{
+  "name": "SALMA Branch Inventory",
+  "short_name": "SALMA Branch",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#3B3B98",
+  "theme_color": "#3B3B98",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5110/5110185.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
