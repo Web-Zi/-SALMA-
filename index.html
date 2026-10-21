@@ -6,9 +6,8 @@
   <title>SALMA Cafe - نظام الجرد</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- jsPDF & AutoTable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <!-- html2pdf.js for Arabic PDF rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -57,11 +56,8 @@
     <header class="bg-salma text-white p-4 shadow-lg sticky top-0 z-40">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3 space-x-reverse">
-          <div class="w-12 h-12 bg-white rounded-full p-1 flex items-center justify-center">
-             <svg viewBox="0 0 100 100" class="w-full h-full text-salma fill-current">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="5"/>
-                <path d="M50 15 L60 35 L80 35 L65 50 L70 70 L50 58 L30 70 L35 50 L20 35 L40 35 Z"/>
-             </svg>
+          <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1 shadow-inner overflow-hidden">
+            <span class="text-salma font-black text-xl">S</span>
           </div>
           <div>
             <h1 class="text-xl font-bold tracking-wide">SALMA CAFE</h1>
@@ -70,7 +66,7 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button onclick="toggleDarkMode()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">🌙</button>
+          <button onclick="toggleDarkMode()" id="darkModeBtn" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">🌙</button>
           <button onclick="openSettingsModal()" class="p-2 bg-salma-dark rounded-lg hover:bg-opacity-80">⚙️</button>
         </div>
       </div>
@@ -96,7 +92,7 @@
 
     <!-- Table Container -->
     <main class="flex-1 p-4 overflow-x-auto">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+      <div id="pdfExportTarget" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden p-2">
         <table class="w-full text-right border-collapse min-w-[700px]">
           <thead>
             <tr class="bg-salma text-white text-sm">
@@ -114,7 +110,7 @@
                   <button onclick="toggleLock('musallam')" id="btnLockMusallam" class="text-xs bg-salma-dark px-2 py-1 rounded">🔒 مغلق</button>
                 </div>
               </th>
-              <th class="p-3 border-b border-salma-dark">العدد</th>
+              <th class="p-3 border-b border-salma-dark">العدد (تلقائي)</th>
               <th class="p-3 border-b border-salma-dark">الملاحظات</th>
             </tr>
           </thead>
@@ -239,11 +235,26 @@
 
     function toggleDarkMode() {
       document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      document.getElementById('darkModeBtn').innerText = isDark ? '☀️' : '🌙';
     }
 
+    // Auto-calculate "العدد": Mustalam + Jadid - Musallam
     function saveInputValue(item, field, val) {
       if (!userInputs[item]) userInputs[item] = {};
       userInputs[item][field] = val;
+
+      const mustalam = parseFloat(userInputs[item].mustalam) || 0;
+      const jadid = parseFloat(userInputs[item].jadid) || 0;
+      const musallam = parseFloat(userInputs[item].musallam) || 0;
+
+      const count = mustalam + jadid - musallam;
+      userInputs[item].count = count;
+
+      const countEl = document.getElementById(`count-${item}`);
+      if (countEl) {
+        countEl.value = count;
+      }
     }
 
     function renderCategoryTabs() {
@@ -283,7 +294,7 @@
           const mustalamVal = userInputs[item]?.mustalam || '';
           const jadidVal = userInputs[item]?.jadid || '';
           const musallamVal = userInputs[item]?.musallam || '';
-          const countVal = userInputs[item]?.count || '';
+          const countVal = userInputs[item]?.count !== undefined ? userInputs[item].count : '';
           const noteVal = userInputs[item]?.note || '';
 
           const row = document.createElement('tr');
@@ -293,7 +304,7 @@
             <td class="p-1 border"><input type="number" value="${mustalamVal}" oninput="saveInputValue('${item}', 'mustalam', this.value)" ${config.locked.mustalam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.mustalam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
             <td class="p-1 border"><input type="number" value="${jadidVal}" oninput="saveInputValue('${item}', 'jadid', this.value)" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
             <td class="p-1 border"><input type="number" value="${musallamVal}" oninput="saveInputValue('${item}', 'musallam', this.value)" ${config.locked.musallam ? 'disabled' : ''} class="w-full p-1 border rounded text-center dark:bg-gray-700 ${config.locked.musallam ? 'bg-gray-100 dark:bg-gray-800' : ''}"></td>
-            <td class="p-1 border"><input type="number" value="${countVal}" oninput="saveInputValue('${item}', 'count', this.value)" class="w-full p-1 border rounded text-center dark:bg-gray-700"></td>
+            <td class="p-1 border"><input type="number" id="count-${item}" value="${countVal}" disabled class="w-full p-1 border rounded text-center font-bold bg-gray-100 dark:bg-gray-800 text-salma dark:text-salma-gold"></td>
             <td class="p-1 border"><input type="text" value="${noteVal}" oninput="saveInputValue('${item}', 'note', this.value)" class="w-full p-1 border rounded text-right dark:bg-gray-700"></td>
           `;
           tbody.appendChild(row);
@@ -448,48 +459,41 @@
       document.getElementById('settingsModal').classList.add('hidden');
     }
 
-    // --- Generate PDF & Push to Firebase ---
+    // --- Save Report as Arabic PDF & Push to Firebase ---
     async function saveAndSendReport() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
       const dateStr = document.getElementById('inventoryDate').value || new Date().toISOString().split('T')[0];
       const timeStr = new Date().toLocaleTimeString('ar-EG');
+      const fileName = `SALMA_Report_${config.branchName}_${dateStr}.pdf`;
 
-      doc.setFontSize(16);
-      doc.text(`SALMA CAFE - Inventory Report`, 105, 15, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text(`Branch: ${config.branchName} | Date: ${dateStr} | Time: ${timeStr} | Phone: ${config.branchPhone}`, 105, 22, { align: 'center' });
-
-      let rows = [];
+      // Structure report payload data for database sync
       let reportTableData = [];
-
       inventoryData.forEach(cat => {
         cat.items.forEach(item => {
           const inp = userInputs[item] || {};
           const mustalam = inp.mustalam || '-';
           const jadid = inp.jadid || '-';
           const musallam = inp.musallam || '-';
-          const count = inp.count || '-';
+          const count = inp.count !== undefined ? inp.count : '-';
           const note = inp.note || '-';
 
-          rows.push([note, count, musallam, jadid, mustalam, item]);
           reportTableData.push({ category: cat.category, item, mustalam, jadid, musallam, count, note });
         });
       });
 
-      doc.autoTable({
-        head: [['ملاحظات', 'العدد', 'المسلم', 'جديد', 'المستلم', 'الصنف']],
-        body: rows,
-        startY: 30,
-        styles: { halign: 'center' }
-      });
+      // Export Arabic PDF using html2pdf
+      const element = document.getElementById('pdfExportTarget');
+      const opt = {
+        margin:       0.3,
+        filename:     fileName,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
 
-      const fileName = `SALMA_Report_${config.branchName}_${dateStr}.pdf`;
-      doc.save(fileName);
-
-      // Save report payload to Firebase Cloud Firestore
       try {
+        await html2pdf().set(opt).from(element).save();
+
+        // Save report payload to Firebase Cloud Firestore
         await db.collection("reports").add({
           branchName: config.branchName,
           branchPhone: config.branchPhone,
@@ -503,7 +507,7 @@
 
         alert('تم حفظ التقرير بملف PDF وإرساله سحابياً إلى Main-SALMA بنجاح!');
         
-        // Reset Inputs
+        // Reset Inputs after successful submission
         userInputs = {};
         config.locked.mustalam = true;
         config.locked.musallam = true;
@@ -512,7 +516,7 @@
         renderTable();
       } catch (err) {
         console.error(err);
-        alert('حدث خطأ أثناء الإرسال عبر الإنترنت!');
+        alert('حدث خطأ أثناء حفظ الملف أو الإرسال!');
       }
     }
 
